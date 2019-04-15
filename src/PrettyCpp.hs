@@ -16,12 +16,28 @@ peripheralDecl findPeripheral p = peripheralStruct findPeripheral p
 
 peripheralStruct :: (String -> Maybe Peripheral) -> Peripheral -> String
 peripheralStruct findPeripheral Peripheral{..} = unlines $
-    [ "struct " <> peripheralName
+    [ "////"
+    , "//"
+    , "//    " <> unwords (words peripheralDescription)
+    , "//"
+    , "////"
+    , ""
+    , "struct " <> peripheralName <> "_t"
     , "{"
     ] ++
     map ("    "<>) xs ++
     [ "};"
     , ""
+    , mconcat
+        [ peripheralName
+        , "_t *"
+        , peripheralName
+        , " = reinterpret_cast<"
+        , peripheralName
+        , "_t*>("
+        , hex peripheralBaseAddress
+        , ");"
+        ]
     ]
     where xs = map (either reservedStructField registerStructField) $ padRegisters $ removeMe rs
           ([], rs) = partitionEithers $ maybe peripheralRegisters derive peripheralDerivedFrom
@@ -29,7 +45,8 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
                       | otherwise = error $ "failed to derive peripheral from " ++ from
 
 registerStructField :: Register -> String
-registerStructField Register{..} = "uint32_t    " <> registerName <> ";"
+registerStructField Register{..} = "uint32_t    " <> registerName <> ";" <> pad <> "// " <> offset registerAddressOffset <> unwords (words registerDescription)
+    where pad = replicate (14 - length registerName) ' '
 
 reservedStructField :: Pad -> String
 reservedStructField _ = "// pad"
