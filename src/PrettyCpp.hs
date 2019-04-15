@@ -2,14 +2,14 @@
 module PrettyCpp (peripheralDecl, parseC) where
 
 import Types
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, sortOn)
 import Data.Char (toLower, toUpper)
 import Data.Either (partitionEithers)
 import qualified Data.IntMap.Strict as M
 import Numeric (showHex)
 import System.IO
 
-type Pad = Int
+type Pad = (Int, Int)   -- ident, size
 
 peripheralDecl :: (String -> Maybe Peripheral) -> Peripheral -> String
 peripheralDecl findPeripheral p = peripheralStruct findPeripheral p
@@ -57,20 +57,28 @@ registerStructField Register{..} = mconcat
     where pad = replicate (14 - length registerName) ' '
 
 reservedStructField :: Pad -> String
-reservedStructField x = mconcat
+reservedStructField (ident, size) = mconcat $
     [ "uint32_t             "
-    , "reserved"
-    , show x
-    , ";"
+    , "pad"
+    , show ident
+    ] ++
+    [ "[" <> show (size `div` 4) <> "]"
+    | size > 4
+    ] ++
+    [ ";"
     ]
 
-removeMe = map (\r@Register{..} -> r {registerName = filter (/='%') registerName})
-
 padRegisters :: [Register] -> [Either Pad Register]
-padRegisters [] = []
-padRegisters rs = M.elems $ m `M.union` u
-    where m = M.fromList [ (registerAddressOffset r, Right r) | r <- rs ]
-          u = M.fromList [ (x, Left x) | x <- [ 0, 4..maximum $ M.keys m ] ]
+padRegisters = f 0 . sortOn registerAddressOffset
+    where f :: Int -> [Register] -> [Either Pad Register]
+          f _ (r:[]) = Right r : []
+          f i (r0:rs)
+              | (r1:_) <- rs
+              , registerAddressOffset r1 > registerAddressOffset r0 + 4
+              = Right r0 : Left (i, registerAddressOffset r1 - registerAddressOffset r0 - 4) : f (i+1) rs
+              | otherwise = Right r0 : f i rs
+
+removeMe = map (\r@Register{..} -> r {registerName = filter (/='%') registerName})
 
 rw :: Maybe AccessType -> String
 rw (Just AccessType_Read'only) = "RO"
