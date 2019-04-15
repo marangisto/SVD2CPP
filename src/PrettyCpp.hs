@@ -48,7 +48,9 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
         , hex peripheralBaseAddress
         , ");"
         ]
-    ]
+    , ""
+    ] ++
+    map (registerConstants peripheralName) rs
     where xs = map (either reservedStructField registerStructField) $ padRegisters $ removeMe rs
           ([], rs) = partitionEithers $ maybe peripheralRegisters T.peripheralRegisters derived
           derived = findPeripheral =<< peripheralDerivedFrom
@@ -63,6 +65,45 @@ registerStructField Register{..} = mconcat
     , offset registerAddressOffset
     , unwords (words registerDescription)
     ]
+
+registerConstants :: String -> Register -> String
+registerConstants peripheralName Register{..} = unlines $
+    [ "namespace Constants"
+    , "{" 
+    , "namespace " <> peripheralName 
+    , "{" 
+    , "namespace " <> registerName 
+    , "{" 
+    ] ++
+    map f registerFields ++
+    [ "}"
+    , "}"
+    , "}"
+    ]
+    where f Field{..} = mconcat
+            [ "    "
+            , "static const uint8_t "
+            , fieldName
+            , " = " 
+            , offset_str
+            , ";"
+            , replicate (18 - length fieldName - length offset_str) ' '
+            , "// "
+            , unwords (words fieldDescription)
+            , wfun width
+            ]
+            where OffsetWidth (offset, width) = fieldPosition
+                  offset_str = show offset
+                  wfun Nothing = ""
+                  wfun (Just 1) = ""
+                  wfun (Just w) = " (" <> show w <> " bits)"
+{-
+    , fieldPosition     :: Position
+    , fieldAccess       :: Maybe AccessType
+    [ "static const uint32_t "
+    , r
+    map show registerFields
+    -}
 
 reservedStructField :: Pad -> String
 reservedStructField (ident, size) = mconcat
