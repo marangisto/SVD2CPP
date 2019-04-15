@@ -40,9 +40,9 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
     , ""
     , mconcat
         [ peripheralName
-        , "_t *"
+        , "_t& "
         , peripheralName
-        , " = reinterpret_cast<"
+        , " = *reinterpret_cast<"
         , peripheralName
         , "_t*>("
         , hex peripheralBaseAddress
