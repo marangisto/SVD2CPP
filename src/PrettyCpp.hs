@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards, OverloadedStrings, TypeApplications #-}
 module PrettyCpp (peripheralDecl, parseC) where
 
-import Types
+import Types as T
 import Data.List (isSuffixOf, sortOn)
 import Data.Char (toLower, toUpper)
 import Data.Either (partitionEithers)
@@ -18,7 +18,7 @@ peripheralStruct :: (String -> Maybe Peripheral) -> Peripheral -> String
 peripheralStruct findPeripheral Peripheral{..} = unlines $
     [ "////"
     , "//"
-    , "//    " <> unwords (words peripheralDescription)
+    , "//    " <> unwords (words $ maybe peripheralDescription T.peripheralDescription derived)
     , "//"
     , "////"
     , ""
@@ -40,9 +40,8 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
         ]
     ]
     where xs = map (either reservedStructField registerStructField) $ padRegisters $ removeMe rs
-          ([], rs) = partitionEithers $ maybe peripheralRegisters derive peripheralDerivedFrom
-          derive from | Just Peripheral{..} <- findPeripheral from = peripheralRegisters
-                      | otherwise = error $ "failed to derive peripheral from " ++ from
+          ([], rs) = partitionEithers $ maybe peripheralRegisters T.peripheralRegisters derived
+          derived = findPeripheral =<< peripheralDerivedFrom
 
 registerStructField :: Register -> String
 registerStructField Register{..} = mconcat
