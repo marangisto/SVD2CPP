@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards, OverloadedStrings, TypeApplications #-}
-module PrettyCpp (peripheralDecl, parseC) where
+module PrettyCpp (preamble, peripheralDecl, parseC) where
 
 import Types as T
 import Data.List (isSuffixOf, sortOn)
@@ -10,6 +10,16 @@ import Numeric (showHex)
 import System.IO
 
 type Pad = (Int, Int)   -- ident, size
+
+preamble :: String
+preamble = unlines
+    [ "template<int N>"
+    , "class reserved_t"
+    , "{"
+    , "private:"
+    , "    uint32_t m_pad[N];"
+    , "};"
+    ]
 
 peripheralDecl :: (String -> Maybe Peripheral) -> Peripheral -> String
 peripheralDecl findPeripheral p = peripheralStruct findPeripheral p
@@ -48,24 +58,23 @@ registerStructField Register{..} = mconcat
     [ "volatile uint32_t    "
     , registerName
     , ";"
-    , pad
+    , replicate (14 - length registerName) ' '
     , "// "
     , offset registerAddressOffset
     , unwords (words registerDescription)
     ]
-    where pad = replicate (14 - length registerName) ' '
 
 reservedStructField :: Pad -> String
-reservedStructField (ident, size) = mconcat $
-    [ "uint32_t             "
-    , "pad"
+reservedStructField (ident, size) = mconcat
+    [ "reserved_t<"
+    , str
+    , ">"
+    , replicate (9 - length str) ' '
+    , "_"
     , show ident
-    ] ++
-    [ "[" <> show (size `div` 4) <> "]"
-    | size > 4
-    ] ++
-    [ ";"
+    , ";"
     ]
+    where str = show (size `div` 4)
 
 padRegisters :: [Register] -> [Either Pad Register]
 padRegisters = f 0 . sortOn registerAddressOffset
