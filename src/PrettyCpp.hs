@@ -16,6 +16,9 @@ preamble :: Device' -> String
 preamble Device'{..} = unlines
     [ "#pragma once"
     , ""
+    , "#include <stdint.h>"     -- uint32_t, uint8_t, etc
+    , "#include <cstddef>"      -- size_t and other goodies
+    , ""
     , "template<int N> class reserved_t { private: uint32_t m_pad[N]; };"
     , ""
     , "static inline uint32_t BV(uint8_t x) { return 1 << x; }"
