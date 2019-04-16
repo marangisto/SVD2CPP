@@ -89,7 +89,7 @@ registerStructField Register{..} = mconcat
     , ";"
     , replicate (21 - length registerName) ' '
     , "// "
-    , offset registerAddressOffset
+    , maybe "" ((<> "] ") . ("["<>) . rw) registerAccess
     , unwords (words registerDescription)
     ]
 
@@ -112,19 +112,13 @@ registerConstants peripheralName Register{..} = unlines $
             , "// "
             , unwords (words fieldDescription)
             , wfun width
+            , maybe "" ((", "<>) . rw) fieldAccess
             ]
             where OffsetWidth (offset, width) = fieldPosition
                   offset_str = show offset
                   wfun Nothing = ""
                   wfun (Just 1) = ""
                   wfun (Just w) = " (" <> show w <> " bits)"
-{-
-    , fieldPosition     :: Position
-    , fieldAccess       :: Maybe AccessType
-    [ "static const uint32_t "
-    , r
-    map show registerFields
-    -}
 
 reservedStructField :: Pad -> String
 reservedStructField (ident, size) = mconcat
@@ -150,13 +144,12 @@ padRegisters = f 0 . sortOn registerAddressOffset
 
 removeMe = map (\r@Register{..} -> r {registerName = filter (/='%') registerName})
 
-rw :: Maybe AccessType -> String
-rw (Just AccessType_Read'only) = "RO"
-rw (Just AccessType_Write'only) = "WO"
-rw (Just AccessType_Read'write) = "RW"
-rw (Just AccessType_WriteOnce) = "WO"
-rw (Just AccessType_Read'writeOnce) = "RW"
-rw _ = "RW" -- we just don't know more precisely
+rw :: AccessType -> String
+rw AccessType_Read'only = "Read-only"
+rw AccessType_Write'only = "Write-only"
+rw AccessType_Read'write = "Read-write"
+rw AccessType_WriteOnce = "Write-once"
+rw AccessType_Read'writeOnce = "Read-write-once"
 
 initCaps :: String -> String
 initCaps (x:xs) = toUpper x : map toLower xs
