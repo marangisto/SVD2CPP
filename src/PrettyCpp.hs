@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards, OverloadedStrings, TypeApplications #-}
-module PrettyCpp (preamble, peripheralDecl, parseC) where
+module PrettyCpp (preamble, postamble, peripheralDecl, parseC) where
 
 import Types as T
 import Data.List (isSuffixOf, sortOn)
@@ -7,17 +7,40 @@ import Data.Char (toLower, toUpper)
 import Data.Either (partitionEithers)
 import qualified Data.IntMap.Strict as M
 import Numeric (showHex)
+import Data.Maybe
 import System.IO
 
 type Pad = (Int, Int)   -- ident, size
 
-preamble :: String
-preamble = unlines
+preamble :: Device' -> String
+preamble Device'{..} = unlines
     [ "#pragma once"
     , ""
     , "template<int N> class reserved_t { private: uint32_t m_pad[N]; };"
     , ""
     , "static inline uint32_t BV(uint8_t x) { return 1 << x; }"
+    , ""
+    , "////"
+    , "//"
+    , "//    " <> deviceName
+    , "//"
+    , "//       schema-version : " <> show deviceSchemaVersion
+    , "//       vendor         : " <> fromMaybe "" deviceVendor
+    , "//       series         : " <> fromMaybe "" deviceSeries
+    , "//       device-version : " <> deviceVersion
+    , "//       address-unit   : " <> show deviceAddressUnitBits <> " bits"
+    , "//       device-width   : " <> show deviceWidth
+    , "//       device-size    : " <> maybe "" show deviceSize
+    , "//"
+    , "////"
+    , ""
+    , "namespace " <> lowerCase deviceName
+    , "{"
+    ]
+
+postamble :: String
+postamble = unlines
+    [ "}"
     ]
 
 peripheralDecl :: (String -> Maybe Peripheral) -> Peripheral -> String

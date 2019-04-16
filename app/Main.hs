@@ -37,7 +37,7 @@ process Options{schema_version=True,..} fn = putStrLn . ((fn++": ")++) =<< getSc
 process Options{..} fn = do
         dev <- parseSVD fn
         let ps = devicePeripherals dev
-        putStrLn $ unlines $ preamble : map (peripheralDecl (findPeripheral ps)) ps
+        putStrLn $ unlines $ preamble dev : map (peripheralDecl (findPeripheral ps)) ps ++ [ postamble ]
 
 findPeripheral :: [Peripheral] -> String -> Maybe Peripheral
 findPeripheral ps s = find ((==s) . peripheralName) ps
