@@ -13,12 +13,11 @@ type Pad = (Int, Int)   -- ident, size
 
 preamble :: String
 preamble = unlines
-    [ "template<int N>"
-    , "class reserved_t"
-    , "{"
-    , "private:"
-    , "    uint32_t m_pad[N];"
-    , "};"
+    [ "#pragma once"
+    , ""
+    , "template<int N> class reserved_t { private: uint32_t m_pad[N]; };"
+    , ""
+    , "static inline uint32_t BV(uint8_t x) { return 1 << x; }"
     ]
 
 peripheralDecl :: (String -> Maybe Peripheral) -> Peripheral -> String
@@ -32,25 +31,30 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
     , "//"
     , "////"
     , ""
-    , "struct " <> peripheralName <> "_t"
+    , "namespace " <> lowerCase peripheralName
+    , "{"
+    , ""
+    , "struct " <> lowerCase peripheralName <> "_t"
     , "{"
     ] ++
     map ("    "<>) xs ++
     [ "};"
     , ""
     , mconcat
-        [ peripheralName
+        [ lowerCase peripheralName
         , "_t& "
         , peripheralName
         , " = *reinterpret_cast<"
-        , peripheralName
+        , lowerCase peripheralName
         , "_t*>("
         , hex peripheralBaseAddress
         , ");"
         ]
     , ""
     ] ++
-    map (registerConstants peripheralName) rs
+    map (registerConstants peripheralName) rs ++
+    [ "}"
+    ]
     where xs = map (either reservedStructField registerStructField) $ padRegisters $ removeMe rs
           ([], rs) = partitionEithers $ maybe peripheralRegisters T.peripheralRegisters derived
           derived = findPeripheral =<< peripheralDerivedFrom
@@ -60,7 +64,7 @@ registerStructField Register{..} = mconcat
     [ "volatile uint32_t    "
     , registerName
     , ";"
-    , replicate (14 - length registerName) ' '
+    , replicate (21 - length registerName) ' '
     , "// "
     , offset registerAddressOffset
     , unwords (words registerDescription)
@@ -68,17 +72,11 @@ registerStructField Register{..} = mconcat
 
 registerConstants :: String -> Register -> String
 registerConstants peripheralName Register{..} = unlines $
-    [ "namespace Constants"
-    , "{" 
-    , "namespace " <> peripheralName 
-    , "{" 
-    , "namespace " <> registerName 
+    [ "namespace " <> registerName <> " // " <> unwords (words registerDescription) <> " fields"
     , "{" 
     ] ++
     map f registerFields ++
     [ "}"
-    , "}"
-    , "}"
     ]
     where f Field{..} = mconcat
             [ "    "
