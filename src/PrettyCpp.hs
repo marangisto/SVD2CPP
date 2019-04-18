@@ -61,7 +61,8 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
     [ "};"
     , ""
     , mconcat
-        [ lowerCase peripheralName
+        [ "static "
+        , lowerCase peripheralName
         , "_t& "
         , peripheralName
         , " = *reinterpret_cast<"
@@ -96,6 +97,9 @@ registerConstants peripheralName Register{..} = unlines $
     , "{" 
     ] ++
     map f registerFields ++
+    [ "    static const uint32_t RESET_VALUE = " <> hex x <> ";"
+    | Just x <- [ registerResetValue ]
+    ] ++
     [ "}"
     ]
     where f Field{..} = mconcat
