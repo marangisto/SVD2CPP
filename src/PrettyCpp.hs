@@ -15,7 +15,8 @@ type Pad = (Int, Int)   -- ident, size
 preamble :: Device' -> String
 preamble Device'{..} = unlines
     [ "#pragma once"
-    , "#include \"stm32.h\""
+    , ""
+    , "#include <stdint.h>"
     , ""
     , "////"
     , "//"
