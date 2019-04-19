@@ -33,6 +33,8 @@ preamble Device'{..} = unlines
     , ""
     , "namespace " <> lowerCase deviceName
     , "{"
+    , ""
+    , "template<int N> class reserved_t { private: uint32_t m_pad[N]; };"
     ]
 
 postamble :: String
