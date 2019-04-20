@@ -3,7 +3,7 @@ module PrettyCpp (preamble, postamble, peripheralDecl, parseC) where
 
 import Types as T
 import Data.List (isSuffixOf, sortOn)
-import Data.List.Extra (stripSuffix, groupSortOn)
+import Data.List.Extra (stripSuffix, groupSortOn, nubOn)
 import Data.Char (toLower, toUpper)
 import Data.Either (partitionEithers)
 import qualified Data.IntMap.Strict as M
@@ -59,7 +59,7 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
     , "{"
     ] ++
     map ("    "<>) xs ++
-    concatMap (registerConstants peripheralName) rs ++
+    concatMap (registerConstants peripheralName) (fixupRegisters rs) ++
     [ "};"
     , ""
     , mconcat
@@ -133,7 +133,7 @@ reservedStructField (ident, size) = mconcat
 fixupRegisters :: [Register] -> [Register]
 fixupRegisters = map f . groupSortOn registerAddressOffset
     where f [x] = x
-          f [x, y] = g x
+          f [x, y] = g x { registerFields = nubOn fieldName $ sortOn fieldName $ registerFields x ++ registerFields y }
           g r@Register{..}
               | Just s <- stripSuffix "_Output" registerName = r { registerName = s }
               | Just s <- stripSuffix "_Input" registerName = r { registerName = s }
