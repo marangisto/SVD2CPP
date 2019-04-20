@@ -3,6 +3,7 @@ module PrettyCpp (preamble, postamble, peripheralDecl, parseC) where
 
 import Types as T
 import Data.List (isSuffixOf, sortOn)
+import Data.List.Extra (stripSuffix, groupSortOn)
 import Data.Char (toLower, toUpper)
 import Data.Either (partitionEithers)
 import qualified Data.IntMap.Strict as M
@@ -74,7 +75,7 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
         ]
     , ""
     ]
-    where xs = map (either reservedStructField registerStructField) $ padRegisters $ removeMe rs
+    where xs = map (either reservedStructField registerStructField) $ padRegisters $ fixupRegisters $ removeMe rs
           ([], rs) = partitionEithers $ maybe peripheralRegisters T.peripheralRegisters derived
           derived = findPeripheral =<< peripheralDerivedFrom
 
@@ -127,6 +128,16 @@ reservedStructField (ident, size) = mconcat
     , ";"
     ]
     where str = show (size `div` 4)
+
+-- | On STMF32 we have overlapping definitions of some timer registers
+fixupRegisters :: [Register] -> [Register]
+fixupRegisters = map f . groupSortOn registerAddressOffset
+    where f [x] = x
+          f [x, y] = g x
+          g r@Register{..}
+              | Just s <- stripSuffix "_Output" registerName = r { registerName = s }
+              | Just s <- stripSuffix "_Input" registerName = r { registerName = s }
+              | otherwise = r
 
 padRegisters :: [Register] -> [Either Pad Register]
 padRegisters = f 0 . sortOn registerAddressOffset
