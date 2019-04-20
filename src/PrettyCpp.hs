@@ -54,13 +54,11 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
     , "//"
     , "////"
     , ""
-    , "namespace " <> lowerCase peripheralName
-    , "{"
-    , ""
     , "struct " <> lowerCase peripheralName <> "_t"
     , "{"
     ] ++
     map ("    "<>) xs ++
+    concatMap (registerConstants peripheralName) rs ++
     [ "};"
     , ""
     , mconcat
@@ -75,9 +73,6 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
         , ");"
         ]
     , ""
-    ] ++
-    map (registerConstants peripheralName) rs ++
-    [ "}"
     ]
     where xs = map (either reservedStructField registerStructField) $ padRegisters $ removeMe rs
           ([], rs) = partitionEithers $ maybe peripheralRegisters T.peripheralRegisters derived
@@ -94,20 +89,17 @@ registerStructField Register{..} = mconcat
     , unwords (words registerDescription)
     ]
 
-registerConstants :: String -> Register -> String
-registerConstants peripheralName Register{..} = unlines $
-    [ "namespace " <> registerName <> " // " <> unwords (words registerDescription) <> " fields"
-    , "{" 
-    ] ++
-    map f registerFields ++
-    [ "    static const uint32_t RESET_VALUE = " <> hex x <> ";"
+registerConstants :: String -> Register -> [String]
+registerConstants peripheralName Register{..} =
+    "" : map f registerFields ++
+    [ "    static const uint32_t " <> registerName <> "_RESET_VALUE = " <> hex x <> ";"
     | Just x <- [ registerResetValue ]
-    ] ++
-    [ "}"
     ]
     where f Field{..} = mconcat
             [ "    "
             , "static const uint8_t "
+            , registerName
+            , "_"
             , fieldName
             , " = " 
             , offset_str
