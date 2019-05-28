@@ -9,6 +9,7 @@ import Data.Either (partitionEithers)
 import qualified Data.IntMap.Strict as M
 import Numeric (showHex)
 import Data.Maybe
+import Data.Bits
 import System.IO
 
 type Pad = (Int, Int)   -- ident, size
@@ -92,30 +93,47 @@ registerStructField Register{..} = mconcat
 
 registerConstants :: String -> Register -> [String]
 registerConstants peripheralName Register{..} =
-    "" : map f registerFields ++
+    "" : map (registerConstant registerName) registerFields ++
     [ "    static const uint32_t " <> registerName <> "_RESET_VALUE = " <> hex x <> ";"
     | Just x <- [ registerResetValue ]
     ]
-    where f Field{..} = mconcat
-            [ "    "
-            , "static const uint8_t "
-            , registerName
-            , "_"
-            , fieldName
-            , " = " 
-            , offset_str
-            , ";"
-            , replicate (18 - length fieldName - length offset_str) ' '
-            , "// "
+
+registerConstant :: String -> Field -> String
+registerConstant registerName Field{..}
+    | Just 32 <- width = []                 -- elide trivialities
+    | Just w <- width, w > 1 = mconcat
+        [ "    "
+        , "static constexpr uint32_t "
+        , constName
+        , "(uint32_t x) { return (x & "
+        , hex $ shift 0xffffffff (w - 32)
+        , ") << "
+        , show offset
+        , "; } "
+        , docs
+        ]
+    | otherwise = mconcat
+        [ "    "
+        , "static const uint32_t "
+        , constName
+        , " = " 
+        , bit_str
+        , ";"
+        , replicate (18 - length fieldName - length bit_str) ' '
+        , docs
+        ]
+    where OffsetWidth (offset, width) = fieldPosition
+          bit_str = hex $ shift 1 offset
+          wfun Nothing = ""
+          wfun (Just 1) = ""
+          wfun (Just w) = " (" <> show w <> " bits)"
+          constName = registerName <> "_" <> fieldName
+          docs = mconcat
+            [ "// "
             , unwords (words fieldDescription)
             , wfun width
             , maybe "" ((", "<>) . rw) fieldAccess
             ]
-            where OffsetWidth (offset, width) = fieldPosition
-                  offset_str = show offset
-                  wfun Nothing = ""
-                  wfun (Just 1) = ""
-                  wfun (Just w) = " (" <> show w <> " bits)"
 
 reservedStructField :: Pad -> String
 reservedStructField (ident, size) = mconcat
