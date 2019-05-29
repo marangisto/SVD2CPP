@@ -38,6 +38,17 @@ preamble Device'{..} = unlines
     , "{"
     , ""
     , "template<int N> class reserved_t { private: uint32_t m_pad[N]; };"
+    , ""
+    , "template<uint8_t POS, uint32_t MASK>"
+    , "struct bit_field_t"
+    , "{"
+    , "    template <uint32_t X>"
+    , "    static constexpr uint32_t value()"
+    , "    {"
+    , "        static_assert((X & ~MASK) == 0, \"field value too large\");"
+    , "        return X << POS;"
+    , "    }"
+    , "};"
     ]
 
 postamble :: String
@@ -103,13 +114,13 @@ registerConstant registerName Field{..}
     | Just 32 <- width = []                 -- elide trivialities
     | Just w <- width, w > 1 = mconcat
         [ "    "
-        , "static constexpr uint32_t "
-        , constName
-        , "(uint32_t x) { return (x & "
-        , hex $ shift 0xffffffff (w - 32)
-        , ") << "
+        , "typedef bit_field_t<"
         , show offset
-        , "; } "
+        , ", "
+        , hex $ shift 0xffffffff (w - 32)
+        , "> "
+        , constName
+        , ";  "
         , docs
         ]
     | otherwise = mconcat
