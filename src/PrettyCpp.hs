@@ -114,18 +114,24 @@ registerConstant registerName Field{..}
     | Just 32 <- width = []                 -- elide trivialities
     | Just w <- width, w > 1 = mconcat
         [ "    "
-        , "typedef bit_field_t<"
+        , "template<uint32_t X>\n"
+        , "    "
+        , "static constexpr uint32_t "
+        , constName
+        , " ="
+        , replicate (20 - length fieldName) ' '
+        , docs
+        , "\n"
+        , "    "
+        , "    bit_field_t<"
         , show offset
         , ", "
         , hex $ shift 0xffffffff (w - 32)
-        , "> "
-        , constName
-        , ";  "
-        , docs
+        , ">::value<X>();"
         ]
     | otherwise = mconcat
         [ "    "
-        , "static const uint32_t "
+        , "static constexpr uint32_t "
         , constName
         , " = " 
         , bit_str
