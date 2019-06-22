@@ -39,8 +39,8 @@ parseDevice fn xml = seq (errorIfNotNull xs) Device'{..}
           deviceResetMask = scaledNonNegativeIntegerToInt <$> device_resetMask
           devicePeripherals = map peripheral $ unPeripherals device_peripherals
           deviceVendorExtensions = vendorExtensions <$> device_vendorExtensions
-          xs = [ unhandled "device_headerDefinitionsPrefix" <$> device_headerDefinitionsPrefix 
-               , unhandled "device_protection" <$> device_protection 
+          xs = [ unhandled "device_headerDefinitionsPrefix" <$> device_headerDefinitionsPrefix
+               , unhandled "device_protection" <$> device_protection
                ]
 
 peripheral :: PeripheralType -> Peripheral
@@ -90,8 +90,9 @@ register RegisterType{..} =
         registerResetMask = scaledNonNegativeIntegerToInt <$> registerType_resetMask
         registerModifiedWriteValues = registerType_modifiedWriteValues
         registerDimension = dimension registerType_dim registerType_dimIncrement registerType_dimIndex
-        Just (FieldsType fs) = registerType_fields -- :: Maybe FieldsType
-        registerFields = map fld fs
+        registerFields
+            | Just (FieldsType fs) <- registerType_fields = map fld fs
+            | otherwise = []
     in seq (errorIfNotNull xs) Register{..}
     where xs = [ unhandled "registerType_derivedFrom" <$> registerType_derivedFrom
                , unhandled "registerType_dimName" <$> registerType_dimName
