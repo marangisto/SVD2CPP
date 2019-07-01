@@ -86,6 +86,8 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
         , ");"
         ]
     , ""
+    , "#define HAVE_PERIPHERAL_" <> peripheralName
+    , ""
     ]
     where xs = map (either reservedStructField registerStructField) $ padRegisters $ fixupRegisters $ removeMe rs
           ([], rs) = partitionEithers $ maybe peripheralRegisters T.peripheralRegisters derived
