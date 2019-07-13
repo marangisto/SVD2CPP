@@ -11,13 +11,15 @@ import Data.Maybe
 import System.IO
 
 data Options = Options
-    { schema_version :: Bool
-    , files :: [FilePath]
+    { schema_version    :: Bool
+    , interrupt         :: Bool
+    , files             :: [FilePath]
     } deriving (Show, Eq, Data, Typeable)
 
 options :: Main.Options
 options = Main.Options
     { schema_version = def &= help "Show schema version"
+    , interrupt = def &= help "Generate interrupt vector table"
     , files = def &= args &= typ "FILES"
     } &=
     verbosity &=
@@ -34,6 +36,10 @@ main = do
 
 process :: Options -> FilePath -> IO ()
 process Options{schema_version=True,..} fn = putStrLn . ((fn++": ")++) =<< getSchemaVersion fn
+process Options{interrupt=True,..} fn = do
+        dev <- parseSVD fn
+        let n = cpuDeviceNumInterrupts =<< deviceCPU dev
+        putStrLn $ unlines $ interruptVectorDecl n $ concatMap peripheralInterrupt $ devicePeripherals dev
 process Options{..} fn = do
         dev <- parseSVD fn
         let ps = devicePeripherals dev

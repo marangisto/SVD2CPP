@@ -1,5 +1,11 @@
 {-# LANGUAGE RecordWildCards, OverloadedStrings, TypeApplications #-}
-module PrettyCpp (preamble, postamble, peripheralDecl, parseC) where
+module PrettyCpp
+    ( preamble
+    , postamble
+    , peripheralDecl
+    , interruptVectorDecl
+    , parseC
+    ) where
 
 import Types as T
 import Data.List (isSuffixOf, sortOn)
@@ -192,10 +198,43 @@ interruptConst :: Interrupt -> String
 interruptConst Interrupt{..} = mconcat
     [ "    "
     , "static constexpr uint8_t "
-    , interruptName
+    , upperCase interruptName
     , " = "
     , show interruptValue
     , "; // "
+    , unwords $ words interruptDescription
+    ]
+
+interruptVectorDecl :: Maybe Int -> [Interrupt] -> [String]
+interruptVectorDecl n' xs = map weakDecl ys ++ [ "" ] ++ zipWith f [0..] vs ++ [ "    };" ]
+    where ys = nubOn interruptValue $ sortOn interruptValue xs
+          vs = map (vectorDecl w) (padInterrupts (-1) ys)
+          f i s = "    " <> (if i > 0 then ", " else "{ ") <> s
+          n = fromMaybe (length vs) n'
+          w = maximum $ map (length . interruptName) xs
+
+padInterrupts :: Int -> [Interrupt] -> [Maybe Interrupt]
+padInterrupts _ [] = []
+padInterrupts i (x:xs)
+    = let j = interruptValue x
+       in replicate (j - i - 1) Nothing ++ [ Just x ] ++ padInterrupts j xs
+
+weakDecl :: Interrupt -> String
+weakDecl Interrupt{..} = mconcat
+    [ "void ISR_"
+    , upperCase interruptName
+    , "(void) __attribute__ ((weak, alias(\"__nothing\")));"
+    ]
+
+vectorDecl :: Int -> Maybe Interrupt -> String
+vectorDecl _ Nothing = "0x0"
+vectorDecl w (Just Interrupt{..}) = mconcat
+    [ "ISR_"
+    , upperCase interruptName
+    , replicate (w - length interruptName) ' '
+    , " // "
+    , show interruptValue
+    , ": "
     , unwords $ words interruptDescription
     ]
 
@@ -210,6 +249,9 @@ rw AccessType_Read'writeOnce = "Read-write-once"
 
 initCaps :: String -> String
 initCaps (x:xs) = toUpper x : map toLower xs
+
+upperCase :: String -> String
+upperCase = map toUpper
 
 lowerCase :: String -> String
 lowerCase = map toLower
