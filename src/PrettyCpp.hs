@@ -72,6 +72,8 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
     ] ++
     map ("    "<>) xs ++
     concatMap (registerConstants peripheralName) (fixupRegisters rs) ++
+    [ "" | peripheralInterrupt /= [] ] ++
+    map interruptConst (nubOn interruptName $ sortOn interruptName peripheralInterrupt) ++
     [ "};"
     , ""
     , mconcat
@@ -135,7 +137,7 @@ registerConstant registerName Field{..}
         [ "    "
         , "static constexpr uint32_t "
         , constName
-        , " = " 
+        , " = "
         , bit_str
         , ";"
         , replicate (18 - length fieldName - length bit_str) ' '
@@ -185,6 +187,17 @@ padRegisters = f 0 . sortOn registerAddressOffset
               , registerAddressOffset r1 > registerAddressOffset r0 + 4
               = Right r0 : Left (i, registerAddressOffset r1 - registerAddressOffset r0 - 4) : f (i+1) rs
               | otherwise = Right r0 : f i rs
+
+interruptConst :: Interrupt -> String
+interruptConst Interrupt{..} = mconcat
+    [ "    "
+    , "static constexpr uint8_t "
+    , interruptName
+    , " = "
+    , show interruptValue
+    , "; // "
+    , unwords $ words interruptDescription
+    ]
 
 removeMe = map (\r@Register{..} -> r {registerName = filter (/='%') registerName})
 
