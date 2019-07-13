@@ -28,19 +28,19 @@ data CPU = CPU
     { cpuName                   :: String
     , cpuRevision               :: RevisionType
     , cpuEndian                 :: EndianType
-    , cpuMpuPresent             :: Maybe Bool   -- FIXME: consider removing Maybe on these
-    , cpuFpuPresent             :: Maybe Bool
-    , cpuFpuDP                  :: Maybe Bool
-    , cpuIcachePresent          :: Maybe Bool
-    , cpuDcachePresent          :: Maybe Bool
-    , cpuItcmPresent            :: Maybe Bool
-    , cpuDtcmPresent            :: Maybe Bool
-    , cpuVtorPresent            :: Maybe Bool
+    , cpuMpuPresent             :: Bool
+    , cpuFpuPresent             :: Bool
+    , cpuFpuDP                  :: Bool
+    , cpuIcachePresent          :: Bool
+    , cpuDcachePresent          :: Bool
+    , cpuItcmPresent            :: Bool
+    , cpuDtcmPresent            :: Bool
+    , cpuVtorPresent            :: Bool
     , cpuNvicPrioBits           :: Int
     , cpuVendorSystickConfig    :: Bool
     , cpuDeviceNumInterrupts    :: Maybe Int
     , cpuSauNumRegions          :: Maybe Int
-    , cpuSauRegionsConfig       :: Maybe Int
+ -- , cpuSauRegionsConfig       :: Maybe ??? -- FIXME: handle this type
     }
     deriving (Eq, Show)
 

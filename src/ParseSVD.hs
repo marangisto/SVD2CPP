@@ -123,7 +123,24 @@ fld FieldType{..} =
                ]
 
 cpu :: CpuType -> CPU
-cpu = undefined
+cpu CpuType{..} =
+    let cpuName = simpleTypeText cpuType_name
+        cpuRevision = cpuType_revision
+        cpuEndian = cpuType_endian
+        cpuMpuPresent = fromMaybe False cpuType_mpuPresent
+        cpuFpuPresent = fromMaybe False cpuType_fpuPresent
+        cpuFpuDP = fromMaybe False cpuType_fpuDP
+        cpuIcachePresent = fromMaybe False cpuType_icachePresent
+        cpuDcachePresent = fromMaybe False cpuType_dcachePresent
+        cpuItcmPresent = fromMaybe False cpuType_itcmPresent
+        cpuDtcmPresent = fromMaybe False cpuType_dtcmPresent
+        cpuVtorPresent = fromMaybe False cpuType_vtorPresent
+        cpuNvicPrioBits = scaledNonNegativeIntegerToInt cpuType_nvicPrioBits
+        cpuVendorSystickConfig = cpuType_vendorSystickConfig
+        cpuDeviceNumInterrupts = scaledNonNegativeIntegerToInt <$> cpuType_deviceNumInterrupts
+        cpuSauNumRegions = scaledNonNegativeIntegerToInt <$> cpuType_sauNumRegions
+    in seq (errorIfNotNull xs) CPU{..}
+    where xs = [ unhandled "cpuType_sauRegionsConfig" <$> cpuType_sauRegionsConfig ]
 
 position :: OneOf3 (ScaledNonNegativeInteger,ScaledNonNegativeInteger)
                   (ScaledNonNegativeInteger,(Maybe (ScaledNonNegativeInteger)))
