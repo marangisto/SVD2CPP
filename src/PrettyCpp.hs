@@ -206,12 +206,17 @@ interruptConst Interrupt{..} = mconcat
     ]
 
 interruptVectorDecl :: Maybe Int -> [Interrupt] -> [String]
-interruptVectorDecl n' xs = map weakDecl ys ++ [ "" ] ++ zipWith f [0..] vs ++ [ "    };" ]
-    where ys = nubOn interruptValue $ sortOn interruptValue xs
-          vs = map (vectorDecl w) (padInterrupts (-1) ys)
-          f i s = "    " <> (if i > 0 then ", " else "{ ") <> s
+interruptVectorDecl n' xs = map weakDecl ys ++ [ "" ] ++ stack : map ("    , "<>) vs ++ [ "    };" ]
+    where ys = exceptions ++ nubOn interruptValue (sortOn interruptValue xs)
+          vs = map (vectorDecl w) (padInterrupts (-16) ys)
           n = fromMaybe (length vs) n'
           w = maximum $ map (length . interruptName) xs
+          stack = mconcat
+              [ "    { "
+              , "&__estack"
+              , replicate (w - 5) ' '
+              , " // -16: Initial stack pointer"
+              ]
 
 padInterrupts :: Int -> [Interrupt] -> [Maybe Interrupt]
 padInterrupts _ [] = []
@@ -236,6 +241,21 @@ vectorDecl w (Just Interrupt{..}) = mconcat
     , show interruptValue
     , ": "
     , unwords $ words interruptDescription
+    ]
+
+-- FIXME: these depend on which ARM core we have!
+exceptions :: [Interrupt]
+exceptions = map (\(interruptValue, interruptName, interruptDescription) -> Interrupt{..})
+    [ (-15, "Reset", "Reset [fixed]")
+    , (-14, "NMI", "Non maskable interrupt [fixed]")
+    , (-13, "HardFault", "All class of fault [fixed]")
+    , (-12, "MemManage", "Memory management [settable]")
+    , (-11, "BusFault", "Pre-fetch fault, memory access fault [settable]")
+    , (-10, "UsageFault", "Undefined instruction or illegal state [settable]")
+    , (-5, "SVCall", "System service call via SWI instruction [settable]")
+    , (-4, "Debug", "Monitor Debug Monitor [settable]")
+    , (-2, "PendSV", "Pendable request for system service [settable]")
+    , (-1, "SysTick", "System tick timer [settable]")
     ]
 
 removeMe = map (\r@Register{..} -> r {registerName = filter (/='%') registerName})
