@@ -37,9 +37,9 @@ main = do
 process :: Options -> FilePath -> IO ()
 process Options{schema_version=True,..} fn = putStrLn . ((fn++": ")++) =<< getSchemaVersion fn
 process Options{interrupt=True,..} fn = do
-        dev <- parseSVD fn
-        let n = cpuDeviceNumInterrupts =<< deviceCPU dev
-        putStrLn $ unlines $ interruptVectorDecl n $ concatMap peripheralInterrupt $ devicePeripherals dev
+        Device'{..} <- parseSVD fn
+        let n = cpuDeviceNumInterrupts =<< deviceCPU
+        putStrLn $ unlines $ interruptVectorDecl deviceName n $ concatMap peripheralInterrupt $ devicePeripherals
 process Options{..} fn = do
         dev <- parseSVD fn
         let ps = devicePeripherals dev

@@ -205,8 +205,20 @@ interruptConst Interrupt{..} = mconcat
     , unwords $ words interruptDescription
     ]
 
-interruptVectorDecl :: Maybe Int -> [Interrupt] -> [String]
-interruptVectorDecl n' xs = map weakDecl (tail ys) ++ [ "" ] ++ decl : stack : map ("    , "<>) vs ++ [ "    };" ]
+interruptVectorDecl :: String -> Maybe Int -> [Interrupt] -> [String]
+interruptVectorDecl name n' xs = concat
+    [ [ "////"
+      , "//"
+      , "//        " <> name <> " vectors"
+      , "//"
+      , "////"
+      , ""
+      ]
+    , map weakDecl (tail ys)
+    , [ "" ]
+    , decl : stack : map ("    , "<>) vs
+    , [ "    };" ]
+    ]
     where ys = exceptions ++ nubOn interruptValue (sortOn interruptValue xs)
           vs = map (vectorDecl w) (padInterrupts (-16) ys)
           n = fromMaybe (length vs) n'
