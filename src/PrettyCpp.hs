@@ -206,15 +206,16 @@ interruptConst Interrupt{..} = mconcat
     ]
 
 interruptVectorDecl :: Maybe Int -> [Interrupt] -> [String]
-interruptVectorDecl n' xs = map weakDecl ys ++ [ "" ] ++ stack : map ("    , "<>) vs ++ [ "    };" ]
+interruptVectorDecl n' xs = map weakDecl (tail ys) ++ [ "" ] ++ decl : stack : map ("    , "<>) vs ++ [ "    };" ]
     where ys = exceptions ++ nubOn interruptValue (sortOn interruptValue xs)
           vs = map (vectorDecl w) (padInterrupts (-16) ys)
           n = fromMaybe (length vs) n'
-          w = maximum $ map (length . interruptName) xs
+          w = maximum $ 25 : map ((4+) . length . interruptName) xs
+          decl = "void (*vectors[])(void) __attribute__ ((section(\".vectors\"))) ="
           stack = mconcat
               [ "    { "
-              , "&__estack"
-              , replicate (w - 5) ' '
+              , "(void(*)(void)) &__estack"
+              , replicate (w - 21) ' '
               , " // -16: Initial stack pointer"
               ]
 
