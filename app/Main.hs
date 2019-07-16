@@ -48,6 +48,7 @@ process Options{..} fn = do
             : map (peripheralDecl (findPeripheral devicePeripherals)) devicePeripherals
            ++ peripheralTraitsDecl devicePeripherals
            ++ [ postamble ]
+           ++ interruptEnumDecl (concatMap peripheralInterrupt $ devicePeripherals)
 
 findPeripheral :: [Peripheral] -> String -> Maybe Peripheral
 findPeripheral ps s = find ((==s) . peripheralName) ps

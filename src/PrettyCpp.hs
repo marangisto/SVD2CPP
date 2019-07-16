@@ -3,6 +3,7 @@ module PrettyCpp
     ( preamble
     , postamble
     , peripheralDecl
+    , interruptEnumDecl
     , interruptVectorDecl
     , parseC
     ) where
@@ -270,6 +271,19 @@ exceptions = map (\(interruptValue, interruptName, interruptDescription) -> Inte
     , (-2, "PendSV", "Pendable request for system service [settable]")
     , (-1, "SysTick", "System tick timer [settable]")
     ]
+
+interruptEnumDecl :: [Interrupt] -> [String]
+interruptEnumDecl xs
+    = "struct isr { enum interrupt_t"
+    : zipWith f [0..] (exceptions ++ nubOn interruptValue (sortOn interruptValue xs))
+    ++ [ "    }; };" ]
+    where f i Interrupt{..} = mconcat
+              [ "    "
+              , if i == 0 then "{ " else ", "
+              , upperCase interruptName
+              , " = "
+              , show interruptValue
+              ]
 
 removeMe = map (\r@Register{..} -> r {registerName = filter (/='%') registerName})
 
