@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 80fb3e6bfcd6f1fd89db4321534ca2629c0589283e14e3f67fc3c3a0eb3b39b3
+-- hash: 1ba7cfae921022b79b63afb7f957b44fc4119ba56fb833d0f820579ed2d54185
 
 name:           SVD2CPP
 version:        0.1.0.0
@@ -29,6 +29,7 @@ library
       CMSIS_SVD_1_3_3
       ParseSVD
       PrettyCpp
+      Traits
       Types
   other-modules:
       Paths_SVD2CPP

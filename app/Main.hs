@@ -3,6 +3,7 @@ module Main where
 
 import ParseSVD
 import PrettyCpp
+import Traits
 import System.Console.CmdArgs
 import Text.HTML.TagSoup
 import Control.Monad
@@ -41,9 +42,12 @@ process Options{interrupt=True,..} fn = do
         let n = cpuDeviceNumInterrupts =<< deviceCPU
         putStrLn $ unlines $ interruptVectorDecl deviceName n $ concatMap peripheralInterrupt $ devicePeripherals
 process Options{..} fn = do
-        dev <- parseSVD fn
-        let ps = devicePeripherals dev
-        putStrLn $ unlines $ preamble dev : map (peripheralDecl (findPeripheral ps)) ps ++ [ postamble ]
+        dev@Device'{..} <- parseSVD fn
+        mapM_ putStrLn
+            $ preamble dev
+            : map (peripheralDecl (findPeripheral devicePeripherals)) devicePeripherals
+           ++ peripheralTraitsDecl devicePeripherals
+           ++ [ postamble ]
 
 findPeripheral :: [Peripheral] -> String -> Maybe Peripheral
 findPeripheral ps s = find ((==s) . peripheralName) ps
