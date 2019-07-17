@@ -240,9 +240,9 @@ padInterrupts i (x:xs)
 
 weakDecl :: Interrupt -> String
 weakDecl Interrupt{..} = mconcat
-    [ "void ISR_"
+    [ "extern void ISR_"
     , upperCase interruptName
-    , "(void) __attribute__ ((weak, alias(\"__nothing\")));"
+    , "(void) __attribute__ ((weak, alias(\"_Z9__nothingv\")));"
     ]
 
 vectorDecl :: Int -> Maybe Interrupt -> String
