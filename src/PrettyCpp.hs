@@ -99,7 +99,8 @@ peripheralStruct findPeripheral Peripheral{..} = unlines $
     , ""
     ]
     where xs = map (either reservedStructField registerStructField) $ padRegisters $ fixupRegisters $ removeMe rs
-          ([], rs) = partitionEithers $ maybe peripheralRegisters T.peripheralRegisters derived
+          (_, rs) = partitionEithers $ maybe peripheralRegisters T.peripheralRegisters derived
+          -- FIXME: handle clusters
           derived = findPeripheral =<< peripheralDerivedFrom
 
 registerStructField :: Register -> String
@@ -150,7 +151,7 @@ registerConstant registerName Field{..}
         , replicate (18 - length fieldName - length bit_str) ' '
         , docs
         ]
-    where OffsetWidth (offset, width) = fieldPosition
+    where Just (offset, width) = offsetWidth fieldPosition
           bit_str = hex $ shift 1 offset
           wfun Nothing = ""
           wfun (Just 1) = ""
@@ -162,6 +163,11 @@ registerConstant registerName Field{..}
             , wfun width
             , maybe "" ((", "<>) . rw) fieldAccess
             ]
+
+offsetWidth :: Position -> Maybe (Int, Maybe Int)
+offsetWidth (OffsetWidth ow) = Just ow
+offsetWidth (LsbMsb (a, b)) = Just (a, Just $ 1 + b - a)
+offsetWidth _ = error "unhandled Position"
 
 reservedStructField :: Pad -> String
 reservedStructField (ident, size) = mconcat

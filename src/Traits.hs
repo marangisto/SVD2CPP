@@ -9,14 +9,15 @@ import Data.Either (partitionEithers)
 import Data.Maybe
 
 peripheralTraitsDecl :: [Peripheral] -> [String]
-peripheralTraitsDecl ps =
-    [ "template<typename PERIPHERAL> struct peripheral_traits {};"
-    , ""
-    ] ++ concat (mapMaybe (fmap prettyPeripheralTraits . peripheralMethods regs) ps)
-    where findPeripheral s = find ((==s) . peripheralName) ps
-          rcc = fromMaybe (error "failed to locate RCC") $ findPeripheral "RCC"
-          ([], rs) = partitionEithers $ peripheralRegisters rcc
+peripheralTraitsDecl ps 
+    | Just rcc <- findPeripheral "RCC"
+    = let ([], rs) = partitionEithers $ peripheralRegisters rcc
           regs = filter (pred . registerName) rs
+       in [ "template<typename PERIPHERAL> struct peripheral_traits {};"
+          , ""
+          ] ++ concat (mapMaybe (fmap prettyPeripheralTraits . peripheralMethods regs) ps)
+    | otherwise = []
+    where findPeripheral s = find ((==s) . peripheralName) ps
           pred s = any (`isPrefixOf` s) [ "AHB", "APB", "IOP" ]
 
 prettyPeripheralTraits :: (String, [String]) -> [String]

@@ -1,7 +1,14 @@
 {-# LANGUAGE RecordWildCards #-}
 module Types (module Types, AccessType(..), EndianType(..), RevisionType(..)) where
 
-import CMSIS_SVD_1_3_3 (AccessType(..), EndianType(..), RevisionType(..), ModifiedWriteValuesType(..))
+import CMSIS_SVD_1_3_3
+    ( AccessType(..)
+    , EndianType(..)
+    , RevisionType(..)
+    , ModifiedWriteValuesType(..)
+    , EnumerationType(..)
+    , DataTypeType(..)
+    )
 
 data Device' = Device'
     { deviceSchemaVersion           :: Double
@@ -22,6 +29,7 @@ data Device' = Device'
     , deviceResetMask               :: Maybe Int
     , devicePeripherals             :: [Peripheral]
     , deviceVendorExtensions        :: Maybe ()
+    , deviceHeaderDefinitionsPrefix :: Maybe String
     } deriving (Eq, Show)
 
 data CPU = CPU
@@ -45,17 +53,18 @@ data CPU = CPU
     deriving (Eq, Show)
 
 data Peripheral = Peripheral
-    { peripheralName            :: String
-    , peripheralDerivedFrom     :: Maybe String
-    , peripheralDescription     :: String
-    , peripheralVersion         :: Maybe String
-    , peripheralGroupName       :: Maybe String
-    , peripheralPrependToName   :: Maybe String
-    , peripheralBaseAddress     :: Int
-    , peripheralSize            :: Maybe Int
-    , peripheralAddressBlock    :: [AddressBlock]
-    , peripheralInterrupt       :: [Interrupt]
-    , peripheralRegisters       :: [Either Cluster Register]
+    { peripheralName                :: String
+    , peripheralDerivedFrom         :: Maybe String
+    , peripheralDescription         :: String
+    , peripheralVersion             :: Maybe String
+    , peripheralGroupName           :: Maybe String
+    , peripheralPrependToName       :: Maybe String
+    , peripheralBaseAddress         :: Int
+    , peripheralSize                :: Maybe Int
+    , peripheralAddressBlock        :: [AddressBlock]
+    , peripheralHeaderStructName    :: Maybe String
+    , peripheralInterrupt           :: [Interrupt]
+    , peripheralRegisters           :: [Either Cluster Register]
     } deriving (Eq, Show)
 
 type Cluster = ()
@@ -72,14 +81,16 @@ data Register = Register
     , registerResetMask     :: Maybe Int
     , registerModifiedWriteValues   :: Maybe ModifiedWriteValuesType
     , registerDimension     :: Maybe Dimension
+    , registerDataType      :: Maybe DataTypeType
     , registerFields        :: [Field]
     } deriving (Eq, Show)
 
 data Field = Field
-    { fieldName         :: String
-    , fieldDescription  :: String
-    , fieldPosition     :: Position
-    , fieldAccess       :: Maybe AccessType
+    { fieldName             :: String
+    , fieldDescription      :: String
+    , fieldPosition         :: Position
+    , fieldAccess           :: Maybe AccessType
+    , fieldEnumeratedValues :: [EnumerationType]
     } deriving (Eq, Show)
 
 data Position

@@ -39,8 +39,8 @@ parseDevice fn xml = seq (errorIfNotNull xs) Device'{..}
           deviceResetMask = scaledNonNegativeIntegerToInt <$> device_resetMask
           devicePeripherals = map peripheral $ unPeripherals device_peripherals
           deviceVendorExtensions = vendorExtensions <$> device_vendorExtensions
-          xs = [ unhandled "device_headerDefinitionsPrefix" <$> device_headerDefinitionsPrefix
-               , unhandled "device_protection" <$> device_protection
+          deviceHeaderDefinitionsPrefix = identifierToString <$> device_headerDefinitionsPrefix
+          xs = [ unhandled "device_protection" <$> device_protection
                ]
 
 peripheral :: PeripheralType -> Peripheral
@@ -55,7 +55,7 @@ peripheral PeripheralType{..} = seq (errorIfNotNull xs) Peripheral{..}
           peripheralSize = scaledNonNegativeIntegerToInt <$> peripheralType_size
           peripheralAddressBlock = map addressBlock peripheralType_addressBlock
           peripheralInterrupt = map interrupt peripheralType_interrupt
---          Just (RegistersType rs) = peripheralType_registers
+          peripheralHeaderStructName = dimableIdentifierToString <$> peripheralType_headerStructName
           rs = maybe [] registersType_choice0 peripheralType_registers
           peripheralRegisters = map clusterRegister rs
           xs = [ unhandled "peripheralType_dim" <$> peripheralType_dim
@@ -65,7 +65,6 @@ peripheral PeripheralType{..} = seq (errorIfNotNull xs) Peripheral{..}
                , unhandled "peripheralType_dimArrayIndex" <$> peripheralType_dimArrayIndex
                , unhandled "peripheralType_alternatePeripheral" <$> peripheralType_alternatePeripheral
                , unhandled "peripheralType_appendToName" <$> peripheralType_appendToName
-               , unhandled "peripheralType_headerStructName" <$> peripheralType_headerStructName
                , unhandled "peripheralType_disableCondition" <$> peripheralType_disableCondition
                , unhandled "peripheralType_access" <$> peripheralType_access
                , unhandled "peripheralType_protection" <$> peripheralType_protection
@@ -74,7 +73,7 @@ peripheral PeripheralType{..} = seq (errorIfNotNull xs) Peripheral{..}
                ]
 
 clusterRegister :: OneOf2 ClusterType RegisterType -> Either Cluster Register
-clusterRegister (OneOf2 _) = error "ClusterType not implemented"
+clusterRegister (OneOf2 _) = Left ()    -- FIXME: implement cluster support
 clusterRegister (TwoOf2 r) = Right $ register r
 
 register :: RegisterType -> Register
@@ -90,6 +89,7 @@ register RegisterType{..} =
         registerResetMask = scaledNonNegativeIntegerToInt <$> registerType_resetMask
         registerModifiedWriteValues = registerType_modifiedWriteValues
         registerDimension = dimension registerType_dim registerType_dimIncrement registerType_dimIndex
+        registerDataType = registerType_dataType
         registerFields
             | Just (FieldsType fs) <- registerType_fields = map fld fs
             | otherwise = []
@@ -98,7 +98,6 @@ register RegisterType{..} =
                , unhandled "registerType_dimName" <$> registerType_dimName
                , unhandled "registerType_dimArrayIndex" <$> registerType_dimArrayIndex
                , unhandled "registerType_protection" <$> registerType_protection
-               , unhandled "registerType_dataType" <$> registerType_dataType
                , unhandled "registerType_writeConstraint" <$> registerType_writeConstraint
                , unhandled "registerType_readAction" <$> registerType_readAction
                ]
@@ -109,6 +108,7 @@ fld FieldType{..} =
         fieldDescription = maybe "" stringTypeToString fieldType_description
         fieldPosition =  position fieldType_choice7
         fieldAccess = fieldType_access
+        fieldEnumeratedValues = fieldType_enumeratedValues
     in seq (errorIfNotNull xs) Field{..}
     where xs = [ unhandled "fieldType_derivedFrom" <$> fieldType_derivedFrom
                , unhandled "fieldType_dim" <$> fieldType_dim
@@ -119,7 +119,6 @@ fld FieldType{..} =
                , unhandled "fieldType_modifiedWriteValues" <$> fieldType_modifiedWriteValues
                , unhandled "fieldType_writeConstraint" <$> fieldType_writeConstraint
                , unhandled "fieldType_readAction" <$> fieldType_readAction
-               , unhandled "fieldType_enumeratedValues" <$> listToMaybe fieldType_enumeratedValues
                ]
 
 cpu :: CpuType -> CPU
