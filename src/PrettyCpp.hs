@@ -228,7 +228,7 @@ interruptVectorDecl name n' xs = concat
           stack = mconcat
               [ "    { "
               , "(void(*)(void)) &__estack"
-              , replicate (w - 21) ' '
+              , replicate (w - 5) ' '
               , " // -16: Initial stack pointer"
               ]
 
@@ -240,16 +240,18 @@ padInterrupts i (x:xs)
 
 weakDecl :: Interrupt -> String
 weakDecl Interrupt{..} = mconcat
-    [ "extern void ISR_"
+    [ "template<> void handler<interrupt::"
     , upperCase interruptName
-    , "(void) __attribute__ ((weak, alias(\"_Z9__nothingv\")));"
+    , ">()"
+    , " __attribute__ ((weak, alias(\"_Z17__default_handlerv\")));"
     ]
 
 vectorDecl :: Int -> Maybe Interrupt -> String
 vectorDecl _ Nothing = "0x0"
 vectorDecl w (Just Interrupt{..}) = mconcat
-    [ "ISR_"
+    [ "handler<interrupt::"
     , upperCase interruptName
+    , ">"
     , replicate (w - length interruptName) ' '
     , " // "
     , show interruptValue
@@ -273,10 +275,18 @@ exceptions = map (\(interruptValue, interruptName, interruptDescription) -> Inte
     ]
 
 interruptEnumDecl :: [Interrupt] -> [String]
-interruptEnumDecl xs
-    = "struct isr { enum interrupt_t"
-    : zipWith f [0..] (exceptions ++ nubOn interruptValue (sortOn interruptValue xs))
-    ++ [ "    }; };" ]
+interruptEnumDecl xs =
+    [ "struct interrupt"
+    , "{"
+    , "    static inline void enable() { __asm volatile (\"cpsie i\"); }"
+    , "    static inline void disable() { __asm volatile (\"cpsid i\"); }"
+    , ""
+    , "    enum interrupt_t"
+    ] ++
+    zipWith f [0..] (exceptions ++ nubOn interruptValue (sortOn interruptValue xs)) ++
+    [ "    };"
+    , "};"
+    ]
     where f i Interrupt{..} = mconcat
               [ "    "
               , if i == 0 then "{ " else ", "
