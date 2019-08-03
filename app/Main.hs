@@ -33,6 +33,7 @@ options = Main.Options
 main :: IO ()
 main = do
     opts@Options{..} <- cmdArgs options
+    hSetNewlineMode stdout noNewlineTranslation
     mapM_ (process opts) files
 
 process :: Options -> FilePath -> IO ()
