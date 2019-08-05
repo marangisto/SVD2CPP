@@ -32,12 +32,17 @@ prettyPeripheralTraits (peripheralName, traits) =
 
 peripheralMethods :: [Register] -> Peripheral -> Maybe (String, [String])
 peripheralMethods regs Peripheral{..} = (\xs -> if null xs then Nothing else Just (peripheralName, xs))
-    $ maybe [] (uncurry f) (firstJust (findRegisterField "EN" peripheralName) regs)
+    $ maybe [] (uncurry f) (firstJust (findRegisterField2 "EN" "" peripheralName) regs)
    ++ maybe [] (uncurry g) (firstJust (findRegisterField "RST" peripheralName) regs)
     where g registerName fieldName = [ prettyPeripheralMethod "reset" True registerName fieldName ]
           f registerName fieldName = [ prettyPeripheralMethod "enable" True registerName fieldName
                                      , prettyPeripheralMethod "disable" False registerName fieldName
                                      ]
+
+findRegisterField2 :: String -> String -> String -> Register -> Maybe (String, String)
+findRegisterField2 s1 s2 p r
+    | Just x <- findRegisterField s1 p r = Just x
+    | otherwise = findRegisterField s2 p r
 
 findRegisterField :: String -> String -> Register -> Maybe (String, String)
 findRegisterField suffix peripheralName Register{..} = (registerName,) . fieldName <$> find pred registerFields
