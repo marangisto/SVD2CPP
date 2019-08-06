@@ -7,6 +7,7 @@ import Data.List.Extra (firstJust)
 import Data.Char (toLower, toUpper)
 import Data.Either (partitionEithers)
 import Data.Maybe
+import Control.Monad
 
 peripheralTraitsDecl :: [Peripheral] -> [String]
 peripheralTraitsDecl ps 
@@ -40,9 +41,7 @@ peripheralMethods regs Peripheral{..} = (\xs -> if null xs then Nothing else Jus
                                      ]
 
 findRegisterField2 :: String -> String -> String -> Register -> Maybe (String, String)
-findRegisterField2 s1 s2 p r
-    | Just x <- findRegisterField s1 p r = Just x
-    | otherwise = findRegisterField s2 p r
+findRegisterField2 s1 s2 p r = findRegisterField s1 p r `mplus` findRegisterField s2 p r
 
 findRegisterField :: String -> String -> Register -> Maybe (String, String)
 findRegisterField suffix peripheralName Register{..} = (registerName,) . fieldName <$> find pred registerFields
