@@ -44,12 +44,13 @@ process Options{interrupt=True,..} fn = do
         putStrLn $ unlines $ interruptVectorDecl deviceName n $ concatMap peripheralInterrupt $ devicePeripherals
 process Options{..} fn = do
         dev@Device'{..} <- parseSVD fn
+        let ps = map normalize devicePeripherals
         mapM_ putStrLn
             $ preamble dev
-            : map (peripheralDecl (findPeripheral devicePeripherals)) devicePeripherals
-           ++ peripheralTraitsDecl devicePeripherals
+            : map (peripheralDecl (findPeripheral ps)) ps
+           ++ peripheralTraitsDecl ps
            ++ [ postamble ]
-           ++ interruptEnumDecl (concatMap peripheralInterrupt $ devicePeripherals)
+           ++ interruptEnumDecl (concatMap peripheralInterrupt ps)
 
 findPeripheral :: [Peripheral] -> String -> Maybe Peripheral
 findPeripheral ps s = find ((==s) . peripheralName) ps

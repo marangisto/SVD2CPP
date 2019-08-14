@@ -5,7 +5,7 @@ module PrettyCpp
     , peripheralDecl
     , interruptEnumDecl
     , interruptVectorDecl
-    , parseC
+    , normalize
     ) where
 
 import Types as T
@@ -301,6 +301,12 @@ interruptEnumDecl xs =
               , show interruptValue
               ]
 
+normalize :: Peripheral -> Peripheral
+normalize p@Peripheral{..} = p
+    { peripheralName = upperCase $ peripheralName
+    , peripheralDerivedFrom = upperCase <$> peripheralDerivedFrom
+    }
+
 removeMe = map (\r@Register{..} -> r {registerName = filter (/='%') registerName})
 
 rw :: AccessType -> String
@@ -325,10 +331,3 @@ hex x = "0x" ++ showHex x ""
 offset :: Int -> String
 offset x = "[" ++ show x ++ "]: "
 
-parseC :: FilePath -> IO ()
-parseC fn = do
-    return ()
-{-
-    s <- readInputStream fn
-    print $ C.parseC s nopos -- (initPos fn)
--}

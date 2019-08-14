@@ -39,7 +39,7 @@ peripheralMethods regs Peripheral{..} = (\xs -> if null xs then Nothing else Jus
           f registerName fieldName = [ prettyPeripheralMethod "enable" True registerName fieldName
                                      , prettyPeripheralMethod "disable" False registerName fieldName
                                      ]
-          h "ADC12_Common" = "ADC12"
+          h "ADC12_COMMON" = "ADC12"
           h x = x
 
 
