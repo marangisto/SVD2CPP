@@ -10,7 +10,7 @@ module PrettyCpp
 
 import Types as T
 import Data.List (isSuffixOf, sortOn)
-import Data.List.Extra (stripSuffix, groupSortOn, nubOn)
+import Data.List.Extra -- (stripPrefix, stripSuffix, groupSortOn, nubOn)
 import Data.Char (toLower, toUpper)
 import Data.Either (partitionEithers)
 import qualified Data.IntMap.Strict as M
@@ -303,9 +303,20 @@ interruptEnumDecl xs =
 
 normalize :: Peripheral -> Peripheral
 normalize p@Peripheral{..} = p
-    { peripheralName = upperCase $ peripheralName
+    { peripheralName = peripheralName'
     , peripheralDerivedFrom = upperCase <$> peripheralDerivedFrom
+    , peripheralRegisters = map (normalizeRegister peripheralName') peripheralRegisters
     }
+    where peripheralName' = upperCase $ peripheralName
+
+normalizeRegister :: String -> Either Cluster Register -> Either Cluster Register
+normalizeRegister _ (Left c@()) = Left c -- FIXME: handle clusters!
+normalizeRegister peripheralName (Right r@Register{..})
+    | Just rest <- stripPrefix (rootName <> "_") registerName
+    , peripheralName `notElem` [ "OPAMP", "COMP" ]         -- repeats same registers qualified by perihperalName
+    = Right r { registerName = rest }
+    | otherwise = Right r
+    where rootName = dropWhileEnd (`elem` ['0'..'9']) peripheralName
 
 removeMe = map (\r@Register{..} -> r {registerName = filter (/='%') registerName})
 
