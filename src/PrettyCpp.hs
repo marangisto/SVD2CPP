@@ -186,6 +186,7 @@ fixupRegisters :: [Register] -> [Register]
 fixupRegisters = map f . groupSortOn registerAddressOffset
     where f [x] = x
           f [x, y] = g x { registerFields = nubOn fieldName $ sortOn fieldName $ registerFields x ++ registerFields y }
+          f xs@(x:_) = g x { registerFields = nubOn fieldName $ sortOn fieldName $ concatMap registerFields xs }
           g r@Register{..}
               | Just s <- stripSuffix "_Output" registerName = r { registerName = s }
               | Just s <- stripSuffix "_Input" registerName = r { registerName = s }
